@@ -1,0 +1,36 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Fitment {
+  id      Int     @id @default(autoincrement())
+  make    String
+  model   String
+  year    String
+  chassis String?
+  tag     String
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  shop             String
+  state            String?
+  isOnline         Boolean
+  scope            String?
+  expires          DateTime?
+  accessToken      String
+  onlineAccessInfo Json?
+  userId           BigInt?
+  firstName        String?
+  lastName         String?
+  email            String?
+  accountOwner     Boolean?
+  locale           String?
+  collaborator     Boolean?
+  emailVerified    Boolean?
+}

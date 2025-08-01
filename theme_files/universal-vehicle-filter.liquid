@@ -1,0 +1,216 @@
+<!-- snippets/vehicle-filter.liquid -->
+
+<div id="header-vehicle-filter">
+  <span class="header-vehicle-text">🚗 <strong>Set Your Vehicle:</strong></span>
+
+  <div class="vehicle-filter-row">
+    <select id="make-select"><option value="">Make</option></select>
+    <select id="year-select" disabled><option value="">Year</option></select>
+    <select id="model-select" disabled><option value="">Model</option></select>
+    <select id="chassis-select" disabled><option value="">Chassis</option></select>
+    <button id="save-vehicle-btn" disabled>Set Vehicle</button>
+  </div>
+</div>
+
+<div id="vehicle-bar">
+  ✅ Showing parts for: <span id="current-vehicle"></span>
+  <button id="clear-vehicle">Change</button>
+</div>
+
+<style>
+#header-vehicle-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem; /* slightly bigger spacing */
+  margin-top: 0.9rem;
+  margin-bottom: 0.9rem;
+  font-size: 1.5rem; /* bigger text */
+}
+
+.vehicle-filter-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+#header-vehicle-filter select {
+  min-width: 120px; /* wider selects */
+  padding: 0.5rem;  /* bigger click area */
+  font-size: 1.5rem;  /* match text size */
+}
+
+#header-vehicle-filter button {
+  padding: 0.5rem 1rem; /* bigger button */
+  font-size: 1.5rem;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#vehicle-bar {
+  display: none; /* hidden by default */
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  background: #f3f3f3;
+  color: #000;
+  padding: 0.75rem 1.25rem; /* bigger bar */
+  margin-top: 1.2rem;
+  font-size: 2.0rem; /* larger text */
+}
+
+#vehicle-bar span {
+  font-weight: bold;
+}
+
+#vehicle-bar button {
+  margin-left: 1rem;
+  background: #e63946;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.9rem; /* bigger button */
+  border-radius: 4px;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+</style>
+
+<script>
+const FITMENTS_API = '/apps/part-pilot';
+const makeSelect = document.getElementById('make-select');
+const yearSelect = document.getElementById('year-select');
+const modelSelect = document.getElementById('model-select');
+const chassisSelect = document.getElementById('chassis-select');
+const saveBtn = document.getElementById('save-vehicle-btn');
+const filterForm = document.getElementById('header-vehicle-filter');
+const vehicleStatus = document.getElementById('vehicle-bar');
+const currentVehicle = document.getElementById('current-vehicle');
+const clearBtn = document.getElementById('clear-vehicle');
+
+let combos = [];
+
+// Load saved vehicle
+const savedVehicle = localStorage.getItem('selectedVehicle');
+if (savedVehicle) {
+  filterForm.style.display = 'none';
+  vehicleStatus.style.display = 'flex';
+  currentVehicle.textContent = savedVehicle;
+}
+
+// Load fitments
+fetch(FITMENTS_API)
+  .then(res => res.json())
+  .then(data => {
+    combos = data;
+    const makes = [...new Set(combos.map(c => c.make))];
+    makes.forEach(make => {
+      const opt = document.createElement('option');
+      opt.value = make;
+      opt.textContent = make;
+      makeSelect.appendChild(opt);
+    });
+  });
+
+// Pickers logic
+makeSelect.addEventListener('change', () => {
+  const make = makeSelect.value;
+  yearSelect.innerHTML = '<option value="">Year</option>';
+  modelSelect.innerHTML = '<option value="">Model</option>';
+  chassisSelect.innerHTML = '<option value="">Chassis</option>';
+  yearSelect.disabled = modelSelect.disabled = chassisSelect.disabled = true;
+  saveBtn.disabled = true;
+
+  if (make) {
+    const years = [...new Set(combos.filter(c => c.make === make).map(c => c.year))];
+    years.forEach(year => {
+      const opt = document.createElement('option');
+      opt.value = year;
+      opt.textContent = year;
+      yearSelect.appendChild(opt);
+    });
+    yearSelect.disabled = false;
+  }
+});
+
+yearSelect.addEventListener('change', () => {
+  const make = makeSelect.value;
+  const year = yearSelect.value;
+
+  modelSelect.innerHTML = '<option value="">Model</option>';
+  chassisSelect.innerHTML = '<option value="">Chassis</option>';
+  modelSelect.disabled = chassisSelect.disabled = true;
+  saveBtn.disabled = true;
+
+  if (make && year) {
+    const models = [...new Set(combos.filter(c => c.make === make && c.year === year).map(c => c.model))];
+    models.forEach(model => {
+      const opt = document.createElement('option');
+      opt.value = model;
+      opt.textContent = model;
+      modelSelect.appendChild(opt);
+    });
+    modelSelect.disabled = false;
+  }
+});
+
+modelSelect.addEventListener('change', () => {
+  const make = makeSelect.value;
+  const year = yearSelect.value;
+  const model = modelSelect.value;
+
+  chassisSelect.innerHTML = '<option value="">Chassis</option>';
+  chassisSelect.disabled = true;
+  saveBtn.disabled = true;
+
+  if (make && year && model) {
+    const chassisCodes = [...new Set(combos.filter(c => c.make === make && c.year === year && c.model === model).map(c => c.chassis).filter(Boolean))];
+    if (chassisCodes.length > 0) {
+      chassisCodes.forEach(chassis => {
+        const opt = document.createElement('option');
+        opt.value = chassis;
+        opt.textContent = chassis;
+        chassisSelect.appendChild(opt);
+      });
+      chassisSelect.disabled = false;
+    } else {
+      chassisSelect.disabled = true;
+    }
+    saveBtn.disabled = false;
+  }
+});
+
+chassisSelect.addEventListener('change', () => {
+  saveBtn.disabled = false;
+});
+
+// Save vehicle & redirect
+saveBtn.addEventListener('click', () => {
+  const make = makeSelect.value.toLowerCase();
+  const year = yearSelect.value;
+  const model = modelSelect.value.toLowerCase().replace(/\s+/g, '-');
+  const chassis = chassisSelect.value ? chassisSelect.value.toLowerCase().replace(/\s+/g, '-') : null;
+
+  const tagParts = [make, model, chassis, year].filter(Boolean);
+  const tag = tagParts.join('-');
+
+if (tag) {
+  localStorage.setItem('selectedVehicle', tag);
+  document.cookie = `my_vehicle=${tag}; path=/`; // NEW LINE
+  filterForm.style.display = 'none';
+  vehicleStatus.style.display = 'flex';
+  currentVehicle.textContent = tag;
+  window.location.href = `/collections/all/${tag}`;
+  //window.location.href = `/search?q=tag:${tag}`;
+}
+});
+
+// Clear vehicle
+clearBtn.addEventListener('click', () => {
+  localStorage.removeItem('selectedVehicle');
+  filterForm.style.display = 'flex';
+  vehicleStatus.style.display = 'none';
+  window.location.href = '/';
+});
+</script>

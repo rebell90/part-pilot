@@ -1,0 +1,31 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "78070f62ea160bf325f3f3a81aa7e8b3"
+name = "part-pilot"
+handle = "part-pilot"
+application_url = "https://junior-doctors-transparency-ia.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+scopes = "read_products,write_products,read_metaobjects,write_metaobjects"
+
+[auth]
+redirect_urls = ["https://junior-doctors-transparency-ia.trycloudflare.com/auth/callback", "https://junior-doctors-transparency-ia.trycloudflare.com/auth/shopify/callback", "https://junior-doctors-transparency-ia.trycloudflare.com/api/auth/callback"]
+
+[pos]
+embedded = false
