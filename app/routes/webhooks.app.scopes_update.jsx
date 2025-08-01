@@ -1,5 +1,4 @@
 import { authenticate } from "../shopify.server";
-import { prisma } from "../utils/db.server";
 
 export const action = async ({ request }) => {
   const { payload, session, topic, shop } = await authenticate.webhook(request);
@@ -8,7 +7,10 @@ export const action = async ({ request }) => {
   const current = payload.current;
 
   if (session) {
-    await db.session.update({
+    // ✅ dynamic import ensures this only runs server-side
+    const { prisma } = await import("../utils/db.server");
+
+    await prisma.session.update({
       where: {
         id: session.id,
       },

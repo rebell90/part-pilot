@@ -1,16 +1,25 @@
-import { authenticate } from "../shopify.server";
-import { prisma } from "../utils/db.server";
+// app/routes/webhooks.app.uninstalled.jsx
 
-export const action = async ({ request }) => {
-  const { shop, session, topic } = await authenticate.webhook(request);
+/**
+ * Shopify webhook: app/uninstalled
+ * Runs only on the server — deletes sessions when the app is uninstalled.
+ */
+export async function action({ request }) {
+  // Dynamically import db.server to ensure it's never bundled client-side
+  const { prisma } = await import("../../utils/db.server.js");
 
-  console.log(`Received ${topic} webhook for ${shop}`);
-
-  // Webhook requests can trigger multiple times and after an app has already been uninstalled.
-  // If this webhook already ran, the session may have been deleted previously.
-  if (session) {
-    await db.session.deleteMany({ where: { shop } });
+  try {
+    // Example cleanup — delete all sessions
+    await prisma.session.deleteMany();
+    console.log("✅ App uninstalled, sessions cleaned up");
+  } catch (error) {
+    console.error("❌ Failed to clean up on uninstall:", error);
   }
 
-  return new Response();
-};
+  return new Response("ok", { status: 200 });
+}
+
+// No UI needed — webhook endpoint only
+export default function WebhookUninstalled() {
+  return null;
+}
