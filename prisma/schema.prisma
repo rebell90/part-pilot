@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,7 +17,7 @@ model Fitment {
 }
 
 model Session {
-  id               String   @id @default(cuid())
+  id               String   @id
   shop             String
   state            String?
   isOnline         Boolean
